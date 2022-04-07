@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-05 23:23
+-- Time-Stamp: 2022-Apr-07 16:14
 -- Provide Session Base Class
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 
@@ -91,7 +91,7 @@ function GitSession:rerun()
         data = vim.tbl_filter(empty_line_filter, data)
       end
       vim.api.nvim_buf_set_option(self.buf, 'modifiable', true)
-      vim.api.nvim_buf_set_lines(self.buf, -2, -1, false, data)
+      vim.api.nvim_buf_set_lines(self.buf, -1, -1, false, data)
       vim.fn.winrestview(pos)
       vim.api.nvim_buf_set_option(self.buf, 'modifiable', false)
     end,
