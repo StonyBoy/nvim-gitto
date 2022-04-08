@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-08 23:33
+-- Time-Stamp: 2022-Apr-09 00:01
 -- Provide a Git commit difference session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -7,14 +7,6 @@ local Module = {}
 local utils = require('utils')
 local gs = require('git_session')
 local GitFileDiffSession = gs.GitSession:new()
-
-function GitFileDiffSession:set_buf_keymaps(buf)
-  for k, v in pairs(self.keymap) do
-    vim.api.nvim_buf_set_keymap(buf, 'n', k, ':lua '..v..'<cr>', {
-      nowait = true, noremap = true, silent = true
-    })
-  end
-end
 
 Module.close = function()
   local buf = vim.api.nvim_get_current_buf()
@@ -80,7 +72,7 @@ function GitFileDiffSession:load_left_buffer()
   vim.api.nvim_buf_set_option(self.left_buf, 'swapfile', false)
   vim.api.nvim_buf_set_option(self.left_buf, 'bufhidden', 'wipe')
   self:set_win_options(self.left_win)
-  self:set_buf_keymaps(self.left_buf)
+  gs.set_buf_keymaps(self.left_buf, self.keymap)
   vim.cmd('filetype detect')
 end
 
@@ -98,7 +90,7 @@ function GitFileDiffSession:load_right_buffer()
   self.right_buf = vim.api.nvim_get_current_buf()
   print('right buffer', self.right_path)
   self:set_win_options(self.right_win)
-  self:set_buf_keymaps(self.right_buf)
+  gs.set_buf_keymaps(self.right_buf, self.keymap)
 end
 
 function GitFileDiffSession:cmd()

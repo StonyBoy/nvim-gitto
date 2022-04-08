@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-08 23:28
+-- Time-Stamp: 2022-Apr-09 00:03
 -- Provide Session Base Class
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 
@@ -18,22 +18,24 @@ function GitSession:new(opts)
   setmetatable(opts, self)
   self.__index = self
   self.marker = string.rep('==', 30)
+  self.key_default = {
+    ['<F1>'] = Module.key_handler('git_session_show_help', Module.show_help),
+  }
   return opts
 end
 
-function GitSession:set_buf_keymaps()
-  for k,v in pairs(self.keymap) do
-    vim.api.nvim_buf_set_keymap(self.buf, 'n', k, ':lua '..v..'<cr>', {
+Module.set_buf_keymaps = function(buf, keymap, default)
+  for k,v in pairs(keymap) do
+    vim.api.nvim_buf_set_keymap(buf, 'n', k, ':lua '..v..'<cr>', {
       nowait = true, noremap = true, silent = true
     })
   end
-  local default = {
-    ['<F1>'] = Module.key_handler('git_session_show_help', Module.show_help),
-  }
-  for k,v in pairs(default) do
-    vim.api.nvim_buf_set_keymap(self.buf, 'n', k, ':lua '..v..'<cr>', {
-      nowait = true, noremap = true, silent = true
-    })
+  if default then
+    for k,v in pairs(default) do
+      vim.api.nvim_buf_set_keymap(buf, 'n', k, ':lua '..v..'<cr>', {
+        nowait = true, noremap = true, silent = true
+      })
+    end
   end
 end
 
@@ -86,7 +88,7 @@ end
 
 function GitSession:run()
   Module.create_bufwin(self)
-  self:set_buf_keymaps()
+  Module.set_buf_keymaps(self.buf, self.keymap, self.key_default)
   Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter)
   return self
 end
