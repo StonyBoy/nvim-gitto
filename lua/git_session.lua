@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-07 16:14
+-- Time-Stamp: 2022-Apr-08 23:28
 -- Provide Session Base Class
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 
@@ -18,7 +18,6 @@ function GitSession:new(opts)
   setmetatable(opts, self)
   self.__index = self
   self.marker = string.rep('==', 30)
-  self.empty_line_filter = false
   return opts
 end
 
@@ -38,84 +37,71 @@ function GitSession:set_buf_keymaps()
   end
 end
 
-function GitSession:_create_buffer_win()
+Module.create_bufwin = function(obj)
   -- save parent window
-  self.start_win = vim.api.nvim_get_current_win()
+  obj.start_win = vim.api.nvim_get_current_win()
   vim.api.nvim_command('botright vnew') -- new vertical window at the far right
-  self.win = vim.api.nvim_get_current_win()
-  self.buf = vim.api.nvim_get_current_buf()
-  vim.api.nvim_buf_set_name(self.buf, self:get_bufname())
+  obj.win = vim.api.nvim_get_current_win()
+  obj.buf = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_name(obj.buf, obj:get_bufname())
   -- nofile prevents warnings about unsaved changes
-  vim.api.nvim_buf_set_option(self.buf, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(self.buf, 'swapfile', false)
+  vim.api.nvim_buf_set_option(obj.buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(obj.buf, 'swapfile', false)
   -- buffer will be destroyed when hidden
-  vim.api.nvim_buf_set_option(self.buf, 'bufhidden', 'wipe')
+  vim.api.nvim_buf_set_option(obj.buf, 'bufhidden', 'wipe')
   -- set custom filetype to allow users to create autocommands or colorschemes based on filetype.
-  vim.api.nvim_buf_set_option(self.buf, 'filetype', self.filetype)
+  vim.api.nvim_buf_set_option(obj.buf, 'filetype', obj.filetype)
 
   -- For better UX we will turn off line wrap and turn on current line highlight.
-  vim.api.nvim_win_set_option(self.win, 'wrap', false)
-  vim.api.nvim_win_set_option(self.win, 'cursorline', true)
-  self:set_buf_keymaps()
-  return self.buf
+  vim.api.nvim_win_set_option(obj.win, 'wrap', false)
+  vim.api.nvim_win_set_option(obj.win, 'cursorline', true)
 end
 
-local empty_line_filter = function(item)
-  return #item > 0
+Module.append_buffer = function(buf, lines, filter)
+  if filter then
+    lines = vim.tbl_filter(filter, lines)
+  end
+  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+  if vim.api.nvim_buf_line_count(buf) == 0 then
+    vim.api.nvim_buf_set_lines(buf, 0, 0, false, lines)
+  else
+    vim.api.nvim_buf_set_lines(buf, -2, -2, false, lines)
+  end
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+end
+
+Module.cmd_append_buffer = function(cmd, cwd, buf, filter, pos)
+  vim.fn.jobstart(cmd, {
+    cwd = cwd,
+    on_stdout = function(_, lines, _)
+      Module.append_buffer(buf, lines, filter)
+      if pos then
+        vim.fn.winrestview(pos)
+      else
+        vim.fn.setpos('.', {buf, 1, 1, 0})
+      end
+    end,
+  })
 end
 
 function GitSession:run()
-  self.buf = self:_create_buffer_win()
-  vim.fn.jobstart(self:cmd(), {
-    cwd = self.cwd,
-    on_stdout = function(_, data, _)
-      if self.empty_line_filter then
-        data = vim.tbl_filter(empty_line_filter, data)
-      end
-      vim.api.nvim_buf_set_option(self.buf, 'modifiable', true)
-      vim.api.nvim_buf_set_lines(self.buf, -2, -1, false, data)
-      vim.api.nvim_buf_set_option(self.buf, 'modifiable', false)
-    end,
-  })
+  Module.create_bufwin(self)
+  self:set_buf_keymaps()
+  Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter)
   return self
 end
 
 function GitSession:rerun()
-  vim.api.nvim_buf_set_option(self.buf, 'modifiable', true)
   local pos = vim.fn.winsaveview()
+  vim.api.nvim_buf_set_option(self.buf, 'modifiable', true)
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, {})
-  vim.fn.jobstart(self:cmd(), {
-    cwd = self.cwd,
-    on_stdout = function(_, data, _)
-      if self.empty_line_filter then
-        data = vim.tbl_filter(empty_line_filter, data)
-      end
-      vim.api.nvim_buf_set_option(self.buf, 'modifiable', true)
-      vim.api.nvim_buf_set_lines(self.buf, -1, -1, false, data)
-      vim.fn.winrestview(pos)
-      vim.api.nvim_buf_set_option(self.buf, 'modifiable', false)
-    end,
-  })
+  Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter, pos)
   return self
 end
 
 function GitSession:continue()
-  vim.api.nvim_buf_set_option(self.buf, 'modifiable', true)
   local pos = vim.fn.winsaveview()
-  vim.fn.jobstart(self:cmd(), {
-    cwd = self.cwd,
-    on_stdout = function(_, data, _)
-      if self.empty_line_filter then
-        data = vim.tbl_filter(empty_line_filter, data)
-      end
-      if #data > 0 then
-        vim.api.nvim_buf_set_option(self.buf, 'modifiable', true)
-        vim.api.nvim_buf_set_lines(self.buf, -2, -1, false, data)
-        vim.fn.winrestview(pos)
-        vim.api.nvim_buf_set_option(self.buf, 'modifiable', false)
-      end
-    end,
-  })
+  Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter, pos)
   return self
 end
 

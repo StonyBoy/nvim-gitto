@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Mar-14 22:42
+-- Time-Stamp: 2022-Apr-08 23:29
 -- Provide a Git Log session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -138,6 +138,10 @@ function GitLogSession:show_help()
   self:show_help_text(helptext)
 end
 
+local empty_line_filter = function(item)
+  return #item > 0
+end
+
 Module.new = function()
   local bufpath = utils.dirname(vim.api.nvim_buf_get_name(0))
   local gitpath = utils.git_toplevel(bufpath)
@@ -161,7 +165,7 @@ Module.new = function()
       gq = gs.key_handler('close_log_session', Module.close_log_session),
     }
   })
-  ses.empty_line_filter = true
+  ses.buffer_filter = empty_line_filter
   return gs.add(ses):run()
 end
 

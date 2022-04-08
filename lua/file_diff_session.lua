@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Feb-27 22:35
+-- Time-Stamp: 2022-Apr-08 23:33
 -- Provide a Git commit difference session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -72,15 +72,10 @@ function GitFileDiffSession:load_left_buffer()
   self.left_buf = vim.api.nvim_create_buf(false, false)
   vim.api.nvim_win_set_buf(self.left_win, self.left_buf)
   self.left_path = 'git://' .. self.commit .. '/' .. self.commitpath
-  print('left buffer', self.left_path)
   vim.api.nvim_buf_set_name(self.left_buf, self.left_path)
-  local cmd = {'git', 'show', self.commit .. ':' .. self.commitpath }
-  vim.fn.jobstart(cmd, {
-    cwd = self.cwd,
-    on_stdout = function(_, data, _)
-      vim.api.nvim_buf_set_lines(self.left_buf, -2, -1, false, data)
-    end,
-  })
+  local cmd = {'git', '-C', self.cwd, 'show', self.commit .. ':' .. self.commitpath }
+  print('left buffer', self.left_path, vim.inspect(cmd))
+  gs.cmd_append_buffer(cmd, self.cwd, self.left_buf)
   vim.api.nvim_buf_set_option(self.left_buf, 'buftype', 'nofile')
   vim.api.nvim_buf_set_option(self.left_buf, 'swapfile', false)
   vim.api.nvim_buf_set_option(self.left_buf, 'bufhidden', 'wipe')
