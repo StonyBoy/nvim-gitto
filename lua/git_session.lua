@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-09 00:03
+-- Time-Stamp: 2022-Apr-09 17:26
 -- Provide Session Base Class
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 
@@ -21,6 +21,7 @@ function GitSession:new(opts)
   self.key_default = {
     ['<F1>'] = Module.key_handler('git_session_show_help', Module.show_help),
   }
+  self.buffer_filter = Module.remove_empty_trailing
   return opts
 end
 
@@ -39,30 +40,36 @@ Module.set_buf_keymaps = function(buf, keymap, default)
   end
 end
 
-Module.create_bufwin = function(obj)
+Module.remove_empty_trailing = function(lines)
+  for idx = #lines,1,-1 do
+    if #lines[idx] == 0 then
+      -- remove line
+      table.remove(lines, idx)
+    else
+      break
+    end
+  end
+  return lines
+end
+
+Module.config_bufwin = function(obj)
   -- save parent window
   obj.start_win = vim.api.nvim_get_current_win()
-  vim.api.nvim_command('botright vnew') -- new vertical window at the far right
   obj.win = vim.api.nvim_get_current_win()
   obj.buf = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_name(obj.buf, obj:get_bufname())
-  -- nofile prevents warnings about unsaved changes
   vim.api.nvim_buf_set_option(obj.buf, 'buftype', 'nofile')
   vim.api.nvim_buf_set_option(obj.buf, 'swapfile', false)
-  -- buffer will be destroyed when hidden
-  vim.api.nvim_buf_set_option(obj.buf, 'bufhidden', 'wipe')
-  -- set custom filetype to allow users to create autocommands or colorschemes based on filetype.
   vim.api.nvim_buf_set_option(obj.buf, 'filetype', obj.filetype)
-
-  -- For better UX we will turn off line wrap and turn on current line highlight.
   vim.api.nvim_win_set_option(obj.win, 'wrap', false)
   vim.api.nvim_win_set_option(obj.win, 'cursorline', true)
 end
 
 Module.append_buffer = function(buf, lines, filter)
   if filter then
-    lines = vim.tbl_filter(filter, lines)
+    lines = filter(lines)
   end
+  print('append_buffer', os.date('@%M:%S'), vim.inspect(lines))
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
   if vim.api.nvim_buf_line_count(buf) == 0 then
     vim.api.nvim_buf_set_lines(buf, 0, 0, false, lines)
@@ -87,7 +94,8 @@ Module.cmd_append_buffer = function(cmd, cwd, buf, filter, pos)
 end
 
 function GitSession:run()
-  Module.create_bufwin(self)
+  vim.api.nvim_command('botright vnew') -- new empty vertical window at the far right
+  Module.config_bufwin(self)
   Module.set_buf_keymaps(self.buf, self.keymap, self.key_default)
   Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter)
   return self
@@ -130,7 +138,7 @@ end
 
 function GitSession:quit()
   for idx, session in ipairs(Module._sessions) do
-    if (session.buf == self.buf) then
+    if (session == self) then
       session:close()
       table.remove(Module._sessions, idx)
       return self
@@ -150,6 +158,10 @@ function GitSession:on_event(evt)
   print('on_event', vim.inspect(evt))
 end
 
+function GitSession:has_buffer(buf)
+  return buf == self.buf
+end
+
 Module.GitSession = GitSession
 
 Module.show_help = function()
@@ -163,7 +175,7 @@ end
 
 Module.find = function(buf)
   for _,session in ipairs(Module._sessions) do
-    if (session.buf == buf) then
+    if session:has_buffer(buf) then
       return session
     end
   end

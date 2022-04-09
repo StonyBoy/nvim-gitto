@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-09 00:01
+-- Time-Stamp: 2022-Apr-09 17:35
 -- Provide a Git commit difference session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -8,39 +8,10 @@ local utils = require('utils')
 local gs = require('git_session')
 local GitFileDiffSession = gs.GitSession:new()
 
-Module.close = function()
-  local buf = vim.api.nvim_get_current_buf()
-  for idx, session in ipairs(gs._sessions) do
-    if (session.left_buf == buf or session.right_buf == buf) then
-      table.remove(gs._sessions, idx)
-      session:close()
-    end
-  end
-end
-
-function GitFileDiffSession:close()
-  vim.api.nvim_buf_delete(self.left_buf, {force = true})
-  if not self.keep_right then
-    vim.api.nvim_buf_delete(self.right_buf, {force = true})
-  else
-    vim.cmd('tabclose')
-  end
-end
-
-function GitFileDiffSession:run()
-  -- Open a new tab with two files
-  -- Read into the left buffer the file from the git commit
-  -- Open the local file in the right buffer
-  self.name = utils.basename(self.commitpath, false)
-  self:load_left_buffer()
-  self:load_right_buffer()
-end
-
-function GitFileDiffSession:set_win_options(win)
+Module.set_win_diffoptions = function(win)
   vim.api.nvim_win_set_option(win, 'diff', true)
   vim.api.nvim_win_set_option(win, 'scrollbind', true)
   vim.api.nvim_win_set_option(win, 'cursorbind', true)
-  -- vim.api.nvim_win_set_option(win, 'scrollopt', { "ver", "hor", "jump" })
   vim.api.nvim_win_set_option(win, 'foldmethod', 'diff')
   vim.api.nvim_win_set_option(win, 'foldcolumn', '1')
   vim.api.nvim_win_set_option(win, 'foldlevel', 0)
@@ -57,40 +28,60 @@ Module.is_file_loaded = function(path)
   return nil
 end
 
-function GitFileDiffSession:load_left_buffer()
-  vim.cmd('tabnew')
-  self.tabpage = vim.api.nvim_get_current_tabpage()
-  self.left_win = vim.api.nvim_get_current_win()
-  self.left_buf = vim.api.nvim_create_buf(false, false)
-  vim.api.nvim_win_set_buf(self.left_win, self.left_buf)
-  self.left_path = 'git://' .. self.commit .. '/' .. self.commitpath
-  vim.api.nvim_buf_set_name(self.left_buf, self.left_path)
-  local cmd = {'git', '-C', self.cwd, 'show', self.commit .. ':' .. self.commitpath }
-  print('left buffer', self.left_path, vim.inspect(cmd))
-  gs.cmd_append_buffer(cmd, self.cwd, self.left_buf)
-  vim.api.nvim_buf_set_option(self.left_buf, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(self.left_buf, 'swapfile', false)
-  vim.api.nvim_buf_set_option(self.left_buf, 'bufhidden', 'wipe')
-  self:set_win_options(self.left_win)
-  gs.set_buf_keymaps(self.left_buf, self.keymap)
+Module.config_commitbufwin = function(item, keymap)
+  item.win = vim.api.nvim_get_current_win()
+  item.buf = vim.api.nvim_get_current_buf()
+  local fpath = 'git://' .. item.commit .. '/' .. item.path
+  vim.api.nvim_buf_set_name(item.buf, fpath)
+  local cmd = {'git', '-C', item.cwd, 'show', item.commit .. ':' .. item.path }
+  gs.cmd_append_buffer(cmd, item.cwd, item.buf, gs.remove_empty_trailing)
+  vim.api.nvim_buf_set_option(item.buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(item.buf, 'swapfile', false)
+  vim.api.nvim_win_set_option(item.win, 'wrap', false)
+  vim.api.nvim_win_set_option(item.win, 'cursorline', true)
+  Module.set_win_diffoptions(item.win)
+  gs.set_buf_keymaps(item.buf, keymap)
   vim.cmd('filetype detect')
 end
 
-function GitFileDiffSession:load_right_buffer()
-  vim.cmd('belowright vsp')
-  self.right_win = vim.api.nvim_get_current_win()
-  self.right_path = utils.path_join(self.cwd, self.commitpath)
-  local buf = Module.is_file_loaded(self.right_path)
+Module.config_filebufwin = function(item, keymap)
+  item.win = vim.api.nvim_get_current_win()
+  item.path = utils.path_join(item.cwd, item.path)
+  local buf = Module.is_file_loaded(item.path)
   if buf then
-    self.keep_right = true
+    item.keep = true
     vim.api.nvim_set_current_buf(buf)
   else
-    vim.cmd('edit '.. self.right_path)
+    item.keep = false
+    vim.cmd('edit ' .. item.path)
   end
-  self.right_buf = vim.api.nvim_get_current_buf()
-  print('right buffer', self.right_path)
-  self:set_win_options(self.right_win)
-  gs.set_buf_keymaps(self.right_buf, self.keymap)
+  item.buf = vim.api.nvim_get_current_buf()
+  Module.set_win_diffoptions(item.win)
+  gs.set_buf_keymaps(item.buf, keymap)
+end
+
+Module.close = function()
+  gs.find(vim.api.nvim_get_current_buf()):quit()
+end
+
+function GitFileDiffSession:close()
+  vim.api.nvim_buf_delete(self.items[1].buf, {force = true})
+  if not self.items[2].keep then
+    vim.api.nvim_buf_delete(self.items[2].buf, {force = true})
+  else
+    vim.cmd('tabclose')
+  end
+end
+
+function GitFileDiffSession:run()
+  vim.cmd('tabnew') -- new tab window without a buffer
+  Module.config_commitbufwin(self.items[1], self.keymap)
+  vim.api.nvim_command('botright vnew') -- new empty vertical window at the far right
+  if self.ancestor then
+    Module.config_commitbufwin(self.items[2], self.keymap)
+  else
+    Module.config_filebufwin(self.items[2], self.keymap)
+  end
 end
 
 function GitFileDiffSession:cmd()
@@ -101,13 +92,20 @@ function GitFileDiffSession:get_bufname()
   return  'GitFileDiff' .. ' #' .. self.commit
 end
 
-Module.new = function(cwd, commit, path)
+function GitFileDiffSession:has_buffer(buf)
+  return self.items[1].buf == buf or self.items[2].buf == buf
+end
+
+Module.new = function(cwd, commit, path, ancestor)
+  cwd = utils.git_toplevel(cwd)
   local ses = GitFileDiffSession:new({
-    cwd = utils.git_toplevel(cwd),
-    commit = commit,
-    commitpath = path,
+    name = utils.basename(path, false),
+    items = {
+      { commit = ancestor or commit, cwd = cwd, path = path, },
+      { commit = commit, cwd = cwd, path = path}
+    },
+    ancestor = ancestor,
     filetype = 'gitto_commit_diff',
-    files = {},
     keymap = {
       gq = gs.key_handler('file_diff_session_close', Module.close),
     }
