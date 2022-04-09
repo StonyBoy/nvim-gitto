@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-09 17:09
+-- Time-Stamp: 2022-Apr-09 17:56
 -- Provide a Git Log session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -11,14 +11,6 @@ local GitLogSession = gs.GitSession:new()
 local bs = require('branch_session')
 local cs = require('commit_session')
 local cds = require('commit_diff_session')
-
-local function buffer_input(pmt)
-  print(pmt)
-  local key = vim.fn.getchar()
-  if key == 13 then
-    return
-  end
-end
 
 -- Create a branch at commit
 Module.create_git_branch = function()

@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-09 17:26
+-- Time-Stamp: 2022-Apr-09 17:55
 -- Provide Session Base Class
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 
@@ -69,7 +69,10 @@ Module.append_buffer = function(buf, lines, filter)
   if filter then
     lines = filter(lines)
   end
-  print('append_buffer', os.date('@%M:%S'), vim.inspect(lines))
+  if #lines == 0 then
+    return
+  end
+  -- print('append_buffer', os.date('@%M:%S'), vim.inspect(lines))
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
   if vim.api.nvim_buf_line_count(buf) == 0 then
     vim.api.nvim_buf_set_lines(buf, 0, 0, false, lines)
