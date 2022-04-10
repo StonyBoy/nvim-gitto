@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Mar-06 14:52
+-- Time-Stamp: 2022-Apr-10 21:14
 -- Provide a Git commit session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -38,7 +38,14 @@ Module.new = function(cwd, commit)
     filetype = 'diff',
     keymap = {
       gq = gs.key_handler('commit_session_close', Module.close),
-    }
+    },
+    callback = function()
+      -- fold diff sections
+      vim.cmd [[setlocal foldmethod=expr]]
+      vim.cmd [[setlocal foldexpr=getline(v:lnum)=~'^diff'?'>1':1]]
+      -- open first section: the commit message
+      vim.cmd [[1,1foldopen]]
+    end,
   })
   return gs.add(ses):run()
 end

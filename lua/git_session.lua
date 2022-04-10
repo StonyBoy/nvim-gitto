@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-09 17:55
+-- Time-Stamp: 2022-Apr-10 21:11
 -- Provide Session Base Class
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 
@@ -65,11 +65,14 @@ Module.config_bufwin = function(obj)
   vim.api.nvim_win_set_option(obj.win, 'cursorline', true)
 end
 
-Module.append_buffer = function(buf, lines, filter)
+Module.append_buffer = function(buf, lines, filter, callback)
   if filter then
     lines = filter(lines)
   end
   if #lines == 0 then
+      if callback then
+        callback()
+      end
     return
   end
   -- print('append_buffer', os.date('@%M:%S'), vim.inspect(lines))
@@ -82,11 +85,11 @@ Module.append_buffer = function(buf, lines, filter)
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
 end
 
-Module.cmd_append_buffer = function(cmd, cwd, buf, filter, pos)
+Module.cmd_append_buffer = function(cmd, cwd, buf, filter, callback, pos)
   vim.fn.jobstart(cmd, {
     cwd = cwd,
     on_stdout = function(_, lines, _)
-      Module.append_buffer(buf, lines, filter)
+      Module.append_buffer(buf, lines, filter, callback)
       if pos then
         vim.fn.winrestview(pos)
       else
@@ -100,7 +103,7 @@ function GitSession:run()
   vim.api.nvim_command('botright vnew') -- new empty vertical window at the far right
   Module.config_bufwin(self)
   Module.set_buf_keymaps(self.buf, self.keymap, self.key_default)
-  Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter)
+  Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter, self.callback)
   return self
 end
 
@@ -108,13 +111,13 @@ function GitSession:rerun()
   local pos = vim.fn.winsaveview()
   vim.api.nvim_buf_set_option(self.buf, 'modifiable', true)
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, {})
-  Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter, pos)
+  Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter, self.callback, pos)
   return self
 end
 
 function GitSession:continue()
   local pos = vim.fn.winsaveview()
-  Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter, pos)
+  Module.cmd_append_buffer(self:cmd(), self.cwd, self.buf, self.buffer_filter, self.callback, pos)
   return self
 end
 
