@@ -1,0 +1,40 @@
+@startuml
+
+[*] --> Gitto
+
+state Gitto {
+    [*] --> LogSession
+
+    LogSession : next page {gn}
+    LogSession : refresh view {gr}
+    LogSession : create branch {gc}
+    LogSession : show help {F1}
+    LogSession --> BranchSession : {gb}
+    LogSession --> CommitSession : {gc}
+    LogSession --> DiffSession : {gd}
+    LogSession --> DiffHeadSession : {gh}
+
+    BranchSession : checkout selected branch {go}
+    BranchSession : delete selected branch {gn}
+    BranchSession : refresh view {gr}
+    BranchSession : quit {gq}
+    BranchSession : show help {F1}
+
+    CommitSession --> FileDiffSession : {go}
+    CommitSession : quit {gq}
+    CommitSession : show help {F1}
+
+    DiffSession --> FileDiffSession : {go}
+    DiffSession : quit {gq}
+    DiffSession : show help {F1}
+
+    DiffHeadSession --> FileDiffSession : {go}
+    DiffHeadSession : quit {gq}
+    DiffHeadSession : show help {F1}
+
+    FileDiffSession: quit {gq}
+}
+
+Gitto --> [*] : {<Leader><Leader>q}
+@enduml
+
