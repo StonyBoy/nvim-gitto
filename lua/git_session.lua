@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-10 21:11
+-- Time-Stamp: 2025-Jan-10 14:39
 -- Provide Session Base Class
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 
@@ -22,6 +22,8 @@ function GitSession:new(opts)
     ['<F1>'] = Module.key_handler('git_session_show_help', Module.show_help),
   }
   self.buffer_filter = Module.remove_empty_trailing
+  self.old_win = vim.api.nvim_tabpage_get_win(0)
+  self.old_pos = vim.api.nvim_win_get_cursor(0)
   return opts
 end
 
@@ -53,8 +55,6 @@ Module.remove_empty_trailing = function(lines)
 end
 
 Module.config_bufwin = function(obj)
-  -- save parent window
-  obj.start_win = vim.api.nvim_get_current_win()
   obj.win = vim.api.nvim_get_current_win()
   obj.buf = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_name(obj.buf, obj:get_bufname())
@@ -147,6 +147,9 @@ function GitSession:quit()
     if (session == self) then
       session:close()
       table.remove(Module._sessions, idx)
+      vim.defer_fn(function()
+        vim.api.nvim_win_set_cursor(self.old_win, self.old_pos)
+      end, 100)
       return self
     end
   end
