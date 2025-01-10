@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-10 21:43
+-- Time-Stamp: 2025-Jan-10 14:55
 -- Provide a Git commit session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -12,16 +12,18 @@ local GitCommitSession = gs.GitSession:new()
 Module.open = function()
   local ses = gs.find(vim.api.nvim_get_current_buf())
   local commitpath = string.match(vim.api.nvim_get_current_line(), ' (%S+)%s+%| [+-]*')
-  if commitpath then
-    return gfds.new(ses.cwd, ses.commit, commitpath, ses.commit .. '~1')
-  end
-  commitpath = string.match(vim.api.nvim_get_current_line(), 'diff %S+ a%/(%S+)%s+b%/%S+')
-  if commitpath then
-    return gfds.new(ses.cwd, ses.commit, commitpath, ses.commit .. '~1')
-  end
-  commitpath = string.match(vim.api.nvim_get_current_line(), '[+-]+ %d+ lines: diff %S+ a/(%S+)%s+b/%S+')
-  if commitpath then
-    return gfds.new(ses.cwd, ses.commit, commitpath, ses.commit .. '~1')
+  if ses then
+    if commitpath then
+      return gfds.new(ses.cwd, ses.commit, commitpath, ses.commit .. '~1')
+    end
+    commitpath = string.match(vim.api.nvim_get_current_line(), 'diff %S+ a%/(%S+)%s+b%/%S+')
+    if commitpath then
+      return gfds.new(ses.cwd, ses.commit, commitpath, ses.commit .. '~1')
+    end
+    commitpath = string.match(vim.api.nvim_get_current_line(), '[+-]+ %d+ lines: diff %S+ a/(%S+)%s+b/%S+')
+    if commitpath then
+      return gfds.new(ses.cwd, ses.commit, commitpath, ses.commit .. '~1')
+    end
   end
   print('not found:', vim.api.nvim_get_current_line())
 end

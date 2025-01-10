@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-09 15:26
+-- Time-Stamp: 2025-Jan-10 14:54
 -- Provide a Git commit difference session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -16,7 +16,7 @@ end
 Module.open = function()
   local ses = gs.find(vim.api.nvim_get_current_buf())
   local commitpath = string.match(vim.api.nvim_get_current_line(), '%d+\t%d+\t([%S]+)')
-  if commitpath then
+  if commitpath and ses then
     if ses.from_head then
       gfds.new(ses.cwd, ses.commit, commitpath)
     else

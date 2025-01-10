@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-09 17:56
+-- Time-Stamp: 2025-Jan-10 15:05
 -- Provide a Git Log session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -65,15 +65,19 @@ end
 
 Module.git_log_refresh = function()
   local ses = gs.find(vim.api.nvim_get_current_buf())
-  ses.start = 0
-  ses:rerun()
+  if ses then
+    ses.start = 0
+    ses:rerun()
+  end
 end
 
 Module.git_log_continue = function()
   local ses = gs.find(vim.api.nvim_get_current_buf())
-  ses.start = ses.start + ses.max
-  vim.fn.cursor(vim.fn.line('.') + ses.max, 0)
-  ses:continue()
+  if ses then
+    ses.start = ses.start + ses.max
+    vim.fn.cursor(vim.fn.line('.') + ses.max, 0)
+    ses:continue()
+  end
 end
 
 -- Open a branch session
@@ -138,11 +142,14 @@ local buffer_filter = function(lines)
 end
 
 Module.new = function()
-  local bufpath = utils.dirname(vim.api.nvim_buf_get_name(0))
-  local gitpath = utils.git_toplevel(bufpath)
-  if not gitpath then
-    print(bufpath, 'is not in a git repo')
-    return nil
+  local bufpath = vim.fs.dirname(vim.api.nvim_buf_get_name(0))
+  local gitpath
+  if bufpath then
+    gitpath = utils.git_toplevel(bufpath)
+    if not gitpath then
+      print(bufpath, 'is not in a git repo')
+      return nil
+    end
   end
   local ses = GitLogSession:new({
     cwd = gitpath,

@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2022-Apr-09 17:35
+-- Time-Stamp: 2025-Jan-10 15:06
 -- Provide a Git commit difference session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -46,7 +46,7 @@ end
 
 Module.config_filebufwin = function(item, keymap)
   item.win = vim.api.nvim_get_current_win()
-  item.path = utils.path_join(item.cwd, item.path)
+  item.path = vim.fs.joinpath(item.cwd, item.path)
   local buf = Module.is_file_loaded(item.path)
   if buf then
     item.keep = true
@@ -99,7 +99,7 @@ end
 Module.new = function(cwd, commit, path, ancestor)
   cwd = utils.git_toplevel(cwd)
   local ses = GitFileDiffSession:new({
-    name = utils.basename(path, false),
+    name = vim.fs.basename(path),
     items = {
       { commit = ancestor or commit, cwd = cwd, path = path, },
       { commit = commit, cwd = cwd, path = path}
