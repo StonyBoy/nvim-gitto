@@ -67,6 +67,13 @@ Module.new = function(cwd, commit)
       vim.cmd [[setlocal foldexpr=getline(v:lnum)=~'^diff'?'>1':1]]
       -- open first section: the commit message
       vim.cmd [[1,1foldopen]]
+      -- left arrow to close fold, enter/right arrow to open fold
+      vim.api.nvim_buf_set_keymap(0, 'n', '<Left>', 'zc', {
+        nowait = true, noremap = true, silent = true
+      })
+      vim.api.nvim_buf_set_keymap(0, 'n', '<CR>', 'za', {
+        nowait = true, noremap = true, silent = true
+      })
     end,
   })
   return gs.add(ses):run()

@@ -139,7 +139,9 @@ function GitSession:show_help_text(helptext)
 end
 
 function GitSession:close()
-  vim.api.nvim_buf_delete(self.buf, {force = true})
+  if vim.api.nvim_buf_is_valid(self.buf) then
+    vim.api.nvim_buf_delete(self.buf, {force = true})
+  end
 end
 
 function GitSession:quit()
@@ -205,6 +207,11 @@ function Module.key_handler(evt_name, func)
 end
 
 Module.shutdown = function()
+  local old_win, old_pos
+  if #Module._sessions > 0 then
+    old_win = Module._sessions[1].old_win
+    old_pos = Module._sessions[1].old_pos
+  end
   local count = 10
   while #Module._sessions > 0 and count > 0 do
     for idx, session in ipairs(Module._sessions) do
@@ -213,14 +220,20 @@ Module.shutdown = function()
     end
     count = count - 1
   end
+  if old_win and vim.api.nvim_win_is_valid(old_win) then
+    vim.api.nvim_set_current_win(old_win)
+    vim.api.nvim_win_set_cursor(old_win, old_pos)
+  end
 end
 
 -- Shutdown handling via NVIM events
-vim.cmd [[
-augroup neovim_shutdown
-    autocmd!
-    autocmd QuitPre * :lua require("git_session").shutdown()
-augroup END
-]]
+vim.api.nvim_create_autocmd('QuitPre', {
+  group = vim.api.nvim_create_augroup('neovim_shutdown', { clear = true }),
+  callback = function()
+    if #Module._sessions > 0 then
+      vim.schedule(Module.shutdown)
+    end
+  end,
+})
 
 return Module

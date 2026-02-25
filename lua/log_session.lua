@@ -124,7 +124,7 @@ function GitLogSession:show_help()
     '  - go: open git commit session - show the content of the commit',
     '  - gb: open git branch session - show a list of local and remote branches',
     '  - gc: create branch name at commit',
-    '  - gd: open git commit diff session - changes in this commit',
+    '  - gd / <CR>: open git commit diff session - changes in this commit',
     '  - gh: open git commit diff head session - changes from this commit to HEAD',
     '  - gr: refresh the git log',
     '  - gn: get next batch of log entries',
@@ -161,6 +161,7 @@ Module.new = function()
       gb = gs.key_handler('open_git_branches', Module.open_git_branches),
       gc = gs.key_handler('create_git_branch', Module.create_git_branch),
       gd = gs.key_handler('open_git_commit_diff', Module.open_git_commit_diff),
+      ['<CR>'] = gs.key_handler('open_git_commit_diff', Module.open_git_commit_diff),
       gh = gs.key_handler('open_git_commit_diff_head', Module.open_git_commit_diff_head),
       gr = gs.key_handler('git_log_refresh', Module.git_log_refresh),
       gn = gs.key_handler('git_log_continue', Module.git_log_continue),
@@ -168,7 +169,17 @@ Module.new = function()
     }
   })
   ses.buffer_filter = buffer_filter
-  return gs.add(ses):run()
+  ses = gs.add(ses):run()
+  vim.api.nvim_create_autocmd('CursorMoved', {
+    buffer = ses.buf,
+    callback = function()
+      if vim.fn.line('.') == vim.api.nvim_buf_line_count(ses.buf) then
+        ses.start = ses.start + ses.max
+        ses:continue()
+      end
+    end,
+  })
+  return ses
 end
 
 return Module

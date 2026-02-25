@@ -65,11 +65,18 @@ Module.close = function()
 end
 
 function GitFileDiffSession:close()
-  vim.api.nvim_buf_delete(self.items[1].buf, {force = true})
+  if vim.api.nvim_buf_is_valid(self.items[1].buf) then
+    vim.api.nvim_buf_delete(self.items[1].buf, {force = true})
+  end
   if not self.items[2].keep then
-    vim.api.nvim_buf_delete(self.items[2].buf, {force = true})
+    if vim.api.nvim_buf_is_valid(self.items[2].buf) then
+      vim.api.nvim_buf_delete(self.items[2].buf, {force = true})
+    end
   else
-    vim.cmd('tabclose')
+    local tabs = vim.api.nvim_list_tabpages()
+    if #tabs > 1 then
+      vim.cmd('tabclose')
+    end
   end
 end
 
@@ -108,6 +115,7 @@ Module.new = function(cwd, commit, path, ancestor)
     filetype = 'gitto_commit_diff',
     keymap = {
       gq = gs.key_handler('file_diff_session_close', Module.close),
+      ['<BS>'] = gs.key_handler('file_diff_session_close', Module.close),
     }
   })
   return gs.add(ses):run()

@@ -85,8 +85,8 @@ and the subject.
 By default only the first 100 commits are shown as this a time consuming operation, but you can get the next block of
 commits by pressing `gn`.
 
-If you now scroll to a particular commit and open a Commit Session with `gc` or show a list of branches by opening a
-Branch Session with `gb`.
+If you now scroll to a particular commit and open a Diff Session with `gd` (or `<Enter>`) or show a list of branches by
+opening a Branch Session with `gb`.
 
 If you modify the state of the repository from e.g. a terminal session the log that you view might be outdated, but you
 can refresh the view with `gr`.
@@ -119,12 +119,15 @@ The commit session shows the content of the commit that you selected in the Log 
 
 ![Commit](/documentation/commit_session.png "Showing commit content")
 
-The diff section is collapsed by default by can be expanded with the standard folding keybindings:
+The diff section is collapsed by default but can be expanded with the standard folding keybindings:
 
-- zR : Open all folds
-- zC : Close all folds under the cursor recursively
+- `<Right>` : Open the fold under the cursor
+- `<Left>` : Close the fold under the cursor
+- `<Enter>` : Toggle the fold under the cursor (open/close)
+- `zR` : Open all folds
+- `zC` : Close all folds under the cursor recursively
 
-Use the command `:show folding` to find out more.
+Use the command `:help folding` to find out more.
 
 When the cursor is in the diff section you can open a File Diff Session to view the full file content using the `go`
 binding.
@@ -143,7 +146,8 @@ shown in front of each filename.
 
 ![Diff Session](/documentation/diff_session.png "Showing commit file difference")
 
-Each file can then be selected (by moving the cursor on top of it) and you can open a File Diff Session with `go`
+Each file can then be selected (by moving the cursor on top of it) and you can open a File Diff Session with `go` (or
+`<Enter>`)
 
 ### Diff HEAD Session
 
@@ -155,6 +159,8 @@ the HEAD of the git repository, so you can see what has been changed since the c
 The File Diff Session opens a new tab where the changed file is shown in the usual vimdiff style.
 
 ![File Diff Session](/documentation/file_diff_session.png "Showing file differences")
+
+Use `gq` or `<BS>` (Backspace) to close the File Diff Session and return to the previous view.
 
 ## Future new features
 
