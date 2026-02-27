@@ -1,5 +1,5 @@
 -- Steen Hegelund
--- Time-Stamp: 2025-Jan-10 15:05
+-- Time-Stamp: 2026-Feb-27
 -- Provide a Git Log session
 -- vim: set ts=2 sw=2 sts=2 tw=120 et cc=120 ft=lua :
 local Module = {}
@@ -90,7 +90,12 @@ Module.close_log_session = function()
 end
 
 function GitLogSession:cmd()
-  return {'git', 'log', '--format=%D%n | %h | %as | %an | %s', '--decorate=short', '-n', self.max, '--skip='..self.start}
+  local cmd = {'git', 'log', '--format=%D%n | %h | %as | %an | %s', '--decorate=short', '-n', self.max, '--skip='..self.start}
+  if self.file_filter and self.filepath then
+    table.insert(cmd, '--')
+    table.insert(cmd, self.filepath)
+  end
+  return cmd
 end
 
 function GitLogSession:create_branch(branchname, commitid)
@@ -125,6 +130,7 @@ function GitLogSession:show_help()
     '  - gb: open git branch session - show a list of local and remote branches',
     '  - gc: create branch name at commit',
     '  - gd / <CR>: open git commit diff session - changes in this commit',
+    '  - gf: toggle file log / full log',
     '  - gh: open git commit diff head session - changes from this commit to HEAD',
     '  - gr: refresh the git log',
     '  - gn: get next batch of log entries',
@@ -141,8 +147,18 @@ local buffer_filter = function(lines)
   return vim.tbl_filter(empty_line_filter, lines)
 end
 
+Module.git_log_file_toggle = function()
+  local ses = gs.find(vim.api.nvim_get_current_buf())
+  if ses then
+    ses.file_filter = not ses.file_filter
+    ses.start = 0
+    ses:rerun()
+  end
+end
+
 Module.new = function()
-  local bufpath = vim.fs.dirname(vim.api.nvim_buf_get_name(0))
+  local filepath = vim.api.nvim_buf_get_name(0)
+  local bufpath = vim.fs.dirname(filepath)
   local gitpath
   if bufpath then
     gitpath = utils.git_toplevel(bufpath)
@@ -153,6 +169,8 @@ Module.new = function()
   end
   local ses = GitLogSession:new({
     cwd = gitpath,
+    filepath = filepath,
+    file_filter = false,
     start = 0,
     max = 100,
     filetype = 'gitto_log',
@@ -163,6 +181,7 @@ Module.new = function()
       gd = gs.key_handler('open_git_commit_diff', Module.open_git_commit_diff),
       ['<CR>'] = gs.key_handler('open_git_commit_diff', Module.open_git_commit_diff),
       gh = gs.key_handler('open_git_commit_diff_head', Module.open_git_commit_diff_head),
+      gf = gs.key_handler('git_log_file_toggle', Module.git_log_file_toggle),
       gr = gs.key_handler('git_log_refresh', Module.git_log_refresh),
       gn = gs.key_handler('git_log_continue', Module.git_log_continue),
       gq = gs.key_handler('close_log_session', Module.close_log_session),

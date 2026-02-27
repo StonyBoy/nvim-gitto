@@ -7,32 +7,35 @@ state Gitto {
 
     LogSession : next page {gn}
     LogSession : refresh view {gr}
+    LogSession : toggle file log {gf}
     LogSession : create branch {gc}
     LogSession : show help {F1}
     LogSession --> BranchSession : {gb}
-    LogSession --> CommitSession : {gc}
-    LogSession --> DiffSession : {gd}
+    LogSession --> CommitSession : {go}
+    LogSession --> DiffSession : {gd / <CR>}
     LogSession --> DiffHeadSession : {gh}
 
     BranchSession : checkout selected branch {go}
-    BranchSession : delete selected branch {gn}
+    BranchSession : delete selected branch {gd}
     BranchSession : refresh view {gr}
-    BranchSession : quit {gq}
+    BranchSession : quit {gq / <BS>}
     BranchSession : show help {F1}
 
     CommitSession --> FileDiffSession : {go}
-    CommitSession : quit {gq}
+    CommitSession : toggle fold {<CR>}
+    CommitSession : close fold {<Left>}
+    CommitSession : quit {gq / <BS>}
     CommitSession : show help {F1}
 
-    DiffSession --> FileDiffSession : {go}
-    DiffSession : quit {gq}
+    DiffSession --> FileDiffSession : {go / <CR>}
+    DiffSession : quit {gq / <BS>}
     DiffSession : show help {F1}
 
-    DiffHeadSession --> FileDiffSession : {go}
-    DiffHeadSession : quit {gq}
+    DiffHeadSession --> FileDiffSession : {go / <CR>}
+    DiffHeadSession : quit {gq / <BS>}
     DiffHeadSession : show help {F1}
 
-    FileDiffSession: quit {gq}
+    FileDiffSession: quit {gq / <BS>}
 }
 
 Gitto --> [*] : {<Leader><Leader>q}

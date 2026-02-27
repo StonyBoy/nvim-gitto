@@ -46,7 +46,7 @@ function GitCommitSession:show_help()
     '',
     'Available Keymaps',
     '  - <F1>: this help message',
-    '  - gq: close git commit session',
+    '  - gq / <BS>: close git commit session',
     '',
   }
   self:show_help_text(helptext)
@@ -60,6 +60,7 @@ Module.new = function(cwd, commit)
     keymap = {
       go = gs.key_handler('commit_session_open', Module.open),
       gq = gs.key_handler('commit_session_close', Module.close),
+      ['<BS>'] = gs.key_handler('commit_session_close', Module.close),
     },
     callback = function()
       -- fold diff sections

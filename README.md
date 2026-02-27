@@ -85,6 +85,9 @@ and the subject.
 By default only the first 100 commits are shown as this a time consuming operation, but you can get the next block of
 commits by pressing `gn`.
 
+You can toggle between the full repository log and a file-specific log by pressing `gf`. When file filtering is active,
+only commits that touched the file you had open when starting `:GL` are shown.
+
 If you now scroll to a particular commit and open a Diff Session with `gd` (or `<Enter>`) or show a list of branches by
 opening a Branch Session with `gb`.
 
@@ -110,6 +113,8 @@ delete a branch from this session.
 
 The current branch is marked with a star.
 
+Use `gq` or `<BS>` (Backspace) to close the Branch Session and return to the Log Session.
+
 ### Commit Session
 
 The commit session shows the content of the commit that you selected in the Log Session, and contains two parts:
@@ -132,6 +137,8 @@ Use the command `:help folding` to find out more.
 When the cursor is in the diff section you can open a File Diff Session to view the full file content using the `go`
 binding.
 
+Use `gq` or `<BS>` (Backspace) to close the Commit Session and return to the Log Session.
+
 ### Diff Session
 
 The Diff Session also shows the content of the selected commit but in a slightly different way than the Commit Session.
@@ -149,10 +156,14 @@ shown in front of each filename.
 Each file can then be selected (by moving the cursor on top of it) and you can open a File Diff Session with `go` (or
 `<Enter>`)
 
+Use `gq` or `<BS>` (Backspace) to close the Diff Session and return to the Log Session.
+
 ### Diff HEAD Session
 
-The File Diff Session is very similar to the Diff Session but here the difference is not to the previous commit but to
+The Diff HEAD Session is very similar to the Diff Session but here the difference is not to the previous commit but to
 the HEAD of the git repository, so you can see what has been changed since the commit was created.
+
+Use `gq` or `<BS>` (Backspace) to close the Diff HEAD Session and return to the Log Session.
 
 ## File Diff Session
 

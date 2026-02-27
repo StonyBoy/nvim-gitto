@@ -46,7 +46,7 @@ function GitCommitDiffSession:show_help()
     'Available Keymaps',
     '  - <F1>: this help message',
     '  - go / <CR>: open git file diff session',
-    '  - gq: close git log session',
+    '  - gq / <BS>: close git diff session',
     '',
   }
   self:show_help_text(helptext)
@@ -64,6 +64,7 @@ Module.new = function(cwd, commit, from_head)
       go = gs.key_handler('commit_diff_session_open', Module.open),
       ['<CR>'] = gs.key_handler('commit_diff_session_open', Module.open),
       gq = gs.key_handler('commit_diff_session_close', Module.close),
+      ['<BS>'] = gs.key_handler('commit_diff_session_close', Module.close),
     }
   })
   if from_head then

@@ -75,7 +75,7 @@ function GitBranchSession:show_help()
     '  - go: checkout the selected branch',
     '  - gd: delete the selected branch',
     '  - gr: refresh the git branch list',
-    '  - gq: close git branch session',
+    '  - gq / <BS>: close git branch session',
     '',
   }
   self:show_help_text(helptext)
@@ -90,6 +90,7 @@ Module.new = function(cwd)
       gd = gs.key_handler('branch_session_delete', Module.delete),
       gr = gs.key_handler('branch_session_refresh', Module.refresh),
       gq = gs.key_handler('branch_session_close', Module.close),
+      ['<BS>'] = gs.key_handler('branch_session_close', Module.close),
     }
   })
   return gs.add(ses):run()
